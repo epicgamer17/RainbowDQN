@@ -7,6 +7,8 @@ import tensorflow as tf
 # tf.config.threading.set_intra_op_parallelism_threads(1)
 # tf.config.threading.set_inter_op_parallelism_threads(1)
 
+import gc
+
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
   try:
@@ -1348,6 +1350,8 @@ class RainbowDQN:
                 # stat_test_score.append(self.test())
                 self.plot_graph(stat_score, stat_loss, stat_test_score, training_step)
             step += 1
+
+            gc.collect()
 
         self.plot_graph(stat_score, stat_loss, stat_test_score, training_step)
         self.export()

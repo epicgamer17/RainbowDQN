@@ -7,6 +7,8 @@ import tensorflow as tf
 # tf.config.threading.set_intra_op_parallelism_threads(1)
 # tf.config.threading.set_inter_op_parallelism_threads(1)
 
+import gc
+
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
   try:
@@ -247,7 +249,7 @@ if __name__ == '__main__':
 
 
     max_trials = 2
-    trials_step = 2  # how many additional trials to do after loading the last ones
+    trials_step = 100  # how many additional trials to do after loading the last ones
 
     try:  # try to load an already saved trials object, and increase the max
         trials = pickle.load(open("./classiccontrol_trials.p", "rb"))
@@ -272,3 +274,4 @@ if __name__ == '__main__':
 
     print(best)
     best_trial = space_eval(search_space, best)
+    gc.collect()
