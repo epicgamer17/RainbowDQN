@@ -51,7 +51,7 @@ def make_func():
         )
         m.train()
         print("Training complete")
-        return -m.test()
+        return -m.test(num_trials=10)
     return run_training
 
 func1 = globalize(make_func())
