@@ -339,7 +339,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         # priorities += self.self.epsilon
         for index, priority in zip(indices, priorities):
             # print("Priority", priority)
-            assert priority > 0, "Negative priority: {}".format(priority)
+            assert priority > 0, ("Negative priority: {}".format(priority))
             assert 0 <= index < len(self)
 
             self.sum_tree[index] = priority ** self.alpha
@@ -1163,6 +1163,8 @@ class RainbowDQN:
         # print("Updating Priorities")
         # time2 = time()
         prioritized_loss = elementwise_loss + self.per_epsilon
+        # CLIPPING PRIORITIZED LOSS FOR ROUNDING ERRORS OR NEGATIVE LOSSES (IDK HOW WE ARE GETTING NEGATIVE LSOSES)
+        prioritized_loss = np.clip(prioritized_loss, 0.01, prioritized_loss.max())
         self.memory.update_priorities(indices, prioritized_loss)
         # print("Updating Priorities Time ", time() - time2)
 
