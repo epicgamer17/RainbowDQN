@@ -1300,10 +1300,12 @@ class RainbowDQN:
         state, _ = self.env.reset()
         model_update_count = 0
         score = 0
-        for step in range(self.num_training_steps):
+        training_step = 0
+        step = 0
+        while training_step < self.num_training_steps:
             # state_input = self.prepare_state(state)
             # clear_output(wait=False)
-            print("{} Step: {}/{}".format(self.model_name, step, self.num_training_steps))
+            print("{} Training Step: {}/{}".format(self.model_name, training_step, self.num_training_steps))
             # print("Last Training Score: ", stat_score[-1] if len(stat_score) > 0 else 0)
             # print("Last Training Loss: ", stat_loss[-1] if len(stat_loss) > 0 else 0)
             action = self.select_action(state)
@@ -1336,17 +1338,18 @@ class RainbowDQN:
             if (step % self.replay_period) == 0 and (len(self.memory) >= self.replay_batch_size):
                 model_update_count += 1
                 loss = self.experience_replay()
+                training_step += 1
                 stat_loss.append(loss)
 
                 self.update_target_model(model_update_count)
 
-
-            if step % graph_interval == 0 and step > 0:
+            if training_step % graph_interval == 0 and training_step > 0:
                 self.export()
                 # stat_test_score.append(self.test())
-                self.plot_graph(stat_score, stat_loss, stat_test_score, step)
+                self.plot_graph(stat_score, stat_loss, stat_test_score, training_step)
+            step += 1
 
-        self.plot_graph(stat_score, stat_loss, stat_test_score, step)
+        self.plot_graph(stat_score, stat_loss, stat_test_score, training_step)
         self.export()
         self.env.close()
         return num_trials_truncated / self.num_training_steps
