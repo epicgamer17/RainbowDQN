@@ -30,6 +30,7 @@ import pickle
 import gymnasium as gym
 from hyperopt import tpe, hp, fmin, space_eval
 import contextlib
+from rainbow_dqn import RainbowDQN
 
 # MAGIC CODE DO NOT TOUCH
 def globalize(func):
