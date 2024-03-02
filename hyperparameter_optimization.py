@@ -23,13 +23,13 @@ import concurrent.futures
 import multiprocessing
 from multiprocessing import Pool
 import sys
-from rainbow_dqn import RainbowDQN
+# from rainbow_dqn import RainbowDQN
 import numpy as np
 import pandas
 import pickle
 import gymnasium as gym
 from hyperopt import tpe, hp, fmin, space_eval
-
+import contextlib
 
 # MAGIC CODE DO NOT TOUCH
 def globalize(func):
@@ -50,14 +50,14 @@ def make_func():
         )
         m.train()
         print("Training complete")
-        return m.test()
+        return -m.test(num_trials=1)
     return run_training
 
 func1 = globalize(make_func())
 
 def objective(params):
     environments_list = [gym.make("CartPole-v1", render_mode="rgb_array"), gym.make("Acrobot-v1", render_mode="rgb_array"), gym.make("MountainCar-v0", render_mode="rgb_array"), ]
-    
+
     if os.path.exists("./classiccontrol_trials.p"):
         trials = pickle.load(open("./classiccontrol_trials.p", "rb"))
         name = "classiccontrol_{}".format(len(trials.trials) + 1)
@@ -75,16 +75,20 @@ def objective(params):
         mode="a",
         header=False,
     )
-    
+
     num_workers = len(environments_list)
     args_list = np.array([[params for env in environments_list], environments_list, [name for env in environments_list]]).T
-    with multiprocessing.Pool(8) as pool:
+    with contextlib.closing(multiprocessing.Pool(8)) as pool:
         # print(pool.map(func1, range(10)))
-        print(pool.map(func1, (args for args in args_list)))
+        scores_list = pool.map_async(func1, (args for args in args_list)).get()
+        print(scores_list)
+    print("parallel programs done")
+    # with concurrent.futures.ThreadPoolExecutor(8) as executor:
+    #     # print(list(executor.map(func1, range(10))))
+    #     scores_list = list(executor.map(func1, (args for args in args_list)))
+    #     print(list(executor.map(func1, (args for args in args_list))))
+    return np.sum(scores_list)
 
-    with concurrent.futures.ThreadPoolExecutor(8) as executor:
-        # print(list(executor.map(func1, range(10))))
-        print(list(executor.map(func1, (args for args in args_list))))
 
 
 func2 = globalize(objective)
@@ -113,7 +117,7 @@ def create_search_space():
             # 'celu',
             'selu',
             'gelu',
-            'glu'
+            # 'glu'
         ]),
         'kernel_initializer': hp.choice('kernel_initializer', ['he_uniform', 'he_normal', 'glorot_uniform', 'glorot_normal', 'lecun_uniform', 'lecun_normal', 'orthogonal', 'variance_baseline', 'variance_0.1', 'variance_0.3', 'variance_0.8', 'variance_3', 'variance_5', 'variance_10']),
         'optimizer_function': hp.choice('optimizer_function', [tf.keras.optimizers.legacy.Adam]), # NO SGD OR RMSPROP FOR NOW SINCE IT IS FOR RAINBOW DQN
@@ -126,7 +130,7 @@ def create_search_space():
         'replay_period': hp.choice('replay_period', [1, 2, 3, 4, 5, 8, 10, 12]),
         'replay_batch_size': hp.choice('replay_batch_size', [2 ** i for i in range(0, 8)]), ###########
         'memory_size': hp.choice('memory_size', [2000, 3000, 5000, 7500, 10000, 15000, 20000, 25000]), #############
-        'min_memory_size': hp.choice('min_memory_size', [125, 250, 375, 500, 625, 750, 875, 1000, 1500, 2000]),
+        'min_memory_size': hp.choice('min_memory_size', [0]), #125, 250, 375, 500, 625, 750, 875, 1000, 1500, 2000
         'n_step': hp.choice('n_step', [1, 2, 3, 4, 5, 8, 10]),
         'discount_factor': hp.choice('discount_factor', [0.1, 0.5, 0.9, 0.99, 0.995, 0.999]),
         'atom_size': hp.choice('atom_size', [11, 21, 31, 41, 51, 61, 71, 81]), #
@@ -141,7 +145,7 @@ def create_search_space():
         'dueling': hp.choice('dueling', [True]),
         'advantage_hidden_layers': hp.choice('advantage_hidden_layers', [0, 1, 2, 3, 4]), #
         'value_hidden_layers': hp.choice('value_hidden_layers', [0, 1, 2, 3, 4]), #
-        'num_training_steps': hp.choice('num_training_steps', [25000]),
+        'num_training_steps': hp.choice('num_training_steps', [200]),
         'per_epsilon': hp.choice('per_epsilon', [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1]),
         'per_alpha': hp.choice('per_alpha', [0.05 * i for i in range(0, 21)]),
         'per_beta': hp.choice('per_beta', [0.05 * i for i in range(1, 21)]),
@@ -237,12 +241,12 @@ if __name__ == '__main__':
         # 'search_max_depth': 5,
         # 'search_max_time': 10,
     }
-    
+
     search_space, initial_best_config = create_search_space()
 
 
-    max_trials = 3
-    trials_step = 10  # how many additional trials to do after loading the last ones
+    max_trials = 2
+    trials_step = 2  # how many additional trials to do after loading the last ones
 
     try:  # try to load an already saved trials object, and increase the max
         trials = pickle.load(open("./classiccontrol_trials.p", "rb"))
