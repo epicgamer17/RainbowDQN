@@ -1164,7 +1164,7 @@ class RainbowDQN:
         # time2 = time()
         prioritized_loss = elementwise_loss + self.per_epsilon
         # CLIPPING PRIORITIZED LOSS FOR ROUNDING ERRORS OR NEGATIVE LOSSES (IDK HOW WE ARE GETTING NEGATIVE LSOSES)
-        prioritized_loss = np.clip(prioritized_loss, 0.01, prioritized_loss.max())
+        prioritized_loss = np.clip(prioritized_loss, 0.01, tf.reduce_max(prioritized_loss))
         self.memory.update_priorities(indices, prioritized_loss)
         # print("Updating Priorities Time ", time() - time2)
 
