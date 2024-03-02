@@ -46,6 +46,7 @@ def globalize(func):
 
 def make_func():
     def run_training(args):
+        gc.collect()
         m = RainbowDQN(
             env=args[1],
             model_name="{}_{}".format(args[2], args[1].unwrapped.spec.id),
@@ -59,6 +60,7 @@ def make_func():
 func1 = globalize(make_func())
 
 def objective(params):
+    gc.collect()
     environments_list = [gym.make("CartPole-v1", render_mode="rgb_array"), gym.make("Acrobot-v1", render_mode="rgb_array"), gym.make("MountainCar-v0", render_mode="rgb_array"), ]
 
     if os.path.exists("./classiccontrol_trials.p"):
